@@ -1,19 +1,14 @@
-# Node dependencies (frontend + backend)
+# Ignore node_modules everywhere
 **/node_modules/
 
 # Logs
 **/*.log
-npm-debug.log*
-yarn-error.log*
 
-# Build outputs
+# Builds
 **/dist/
 **/build/
 
-# OS files
+# OS / editor
 .DS_Store
-Thumbs.db
-
-# Editor configs
 .vscode/
 .idea/
