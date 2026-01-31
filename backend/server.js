@@ -65,14 +65,25 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/stock', stockRoutes);
 
+const fs = require('fs'); // Check for file existence
+
 // Serve Frontend Static Files (Production)
 if (process.env.NODE_ENV === 'production') {
+    const frontendPath = path.join(__dirname, '../frontend/dist');
+
     // Set static folder
-    app.use(express.static(path.join(__dirname, '../frontend/dist')));
+    app.use(express.static(frontendPath));
 
     // Catch-all route to serve index.html for SPA
     app.get('*', (req, res) => {
-        res.sendFile(path.resolve(__dirname, '../frontend', 'dist', 'index.html'));
+        const indexPath = path.resolve(frontendPath, 'index.html');
+
+        if (fs.existsSync(indexPath)) {
+            res.sendFile(indexPath);
+        } else {
+            console.error(`Frontend build missing at: ${indexPath}`);
+            res.status(500).send('Server Error: Frontend build not found. Please check Render Build Command.');
+        }
     });
 } else {
     // Development fallback
