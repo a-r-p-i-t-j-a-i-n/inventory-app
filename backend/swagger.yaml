@@ -1,0 +1,100 @@
+openapi: 3.0.0
+info:
+  title: Inventory Management System API
+  description: Production-grade API for managing inventory, products, and stock.
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000
+    description: Development Server
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - bearerAuth: []
+paths:
+  /api/auth/login:
+    post:
+      summary: Login user
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username: { type: string }
+                password: { type: string }
+      responses:
+        200:
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username: { type: string }
+                  token: { type: string }
+  /api/products:
+    get:
+      summary: Get all products
+      tags: [Products]
+      parameters:
+        - in: query
+          name: pageNumber
+          schema: { type: integer }
+        - in: query
+          name: keyword
+          schema: { type: string }
+      responses:
+        200:
+          description: List of products
+    post:
+      summary: Create product
+      tags: [Products]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, sku, price]
+              properties:
+                name: { type: string }
+                sku: { type: string }
+                price: { type: number }
+                category: { type: string }
+                description: { type: string }
+      responses:
+        201:
+          description: Created
+  /api/stock:
+    post:
+      summary: Add Stock Movement
+      tags: [Stock]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [productId, type, quantity]
+              properties:
+                productId: { type: string }
+                type: { type: string, enum: [IN, OUT] }
+                quantity: { type: number }
+                reason: { type: string }
+      responses:
+        201:
+          description: Movement recorded
+  /api/stock/dashboard:
+    get:
+      summary: Get Dashboard Stats
+      tags: [Stock]
+      responses:
+        200:
+          description: Stats data
