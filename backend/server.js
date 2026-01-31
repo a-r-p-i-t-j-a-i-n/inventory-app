@@ -55,9 +55,31 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/stock', stockRoutes);
 
-app.get('/', (req, res) => {
-    res.send('API is running... Docs at /api/docs');
-});
+const path = require('path'); // Add path module
+
+// ... (other middlewares)
+
+// Routes
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/stock', stockRoutes);
+
+// Serve Frontend Static Files (Production)
+if (process.env.NODE_ENV === 'production') {
+    // Set static folder
+    app.use(express.static(path.join(__dirname, '../frontend/dist')));
+
+    // Catch-all route to serve index.html for SPA
+    app.get('*', (req, res) => {
+        res.sendFile(path.resolve(__dirname, '../frontend', 'dist', 'index.html'));
+    });
+} else {
+    // Development fallback
+    app.get('/', (req, res) => {
+        res.send('API is running... (Dev Mode)');
+    });
+}
 
 // Centralized Error Handling Middleware
 app.use((err, req, res, next) => {
