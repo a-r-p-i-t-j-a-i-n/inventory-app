@@ -72,3 +72,11 @@ You can use the following accounts to test the different roles.
 *   **Backend**: Follows a Controller-Service pattern. logic is inside the `services` folder to keep the `controllers` clean.
 *   **Frontend**: Uses Redux Toolkit Query (RTK Query) for efficient data fetching and caching.
 *   **Styling**: We used standard CSS Modules instead of a framework like Tailwind to demonstrate core CSS skills, including Flexbox and responsive media queries.
+
+## Assumptions & Trade-offs
+
+*   **User registration is kept minimal** and intended mainly for testing roles (Admin / Viewer).
+*   **JWT authentication is implemented without refresh tokens** to keep the system simple.
+*   **Stock movements are recorded as immutable logs** for audit purposes.
+*   **Styling is done using CSS Modules** instead of Tailwind to demonstrate core CSS skills.
+*   **No payment or order system is included**, as the focus is inventory tracking only.
