@@ -5,6 +5,8 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const xss = require('xss-clean');
+const path = require('path');
+const fs = require('fs');
 const connectDB = require('./src/config/db');
 
 const authRoutes = require('./src/routes/authRoutes');
@@ -19,8 +21,11 @@ connectDB();
 
 const app = express();
 
-// Security Headers
-app.use(helmet());
+// Security Headers - Relaxed for simple SPA deployment
+app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false
+}));
 
 // Global Rate Limiting
 const limiter = rateLimit({
@@ -47,59 +52,58 @@ if (process.env.NODE_ENV !== 'production') {
 
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
-const swaggerDocument = YAML.load('./swagger.yaml');
+try {
+    const swaggerDocument = YAML.load('./swagger.yaml');
+    app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+} catch (error) {
+    console.error('Swagger Load Error:', error.message);
+}
 
-// Routes
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/stock', stockRoutes);
-
-const path = require('path'); // Add path module
-
-// ... (other middlewares)
-
-// Routes
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-app.use('/api/auth', authRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/stock', stockRoutes);
-
-const fs = require('fs'); // Check for file existence
 
 // Serve Frontend Static Files (Production)
 if (process.env.NODE_ENV === 'production') {
-    const frontendPath = path.join(__dirname, '../frontend/dist');
+    // Robust resolution: backend is running from /backend folder, so frontend is ../frontend
+    // Using process.cwd() is safer in some container envs
+    const frontendDistPath = path.resolve(__dirname, '../frontend/dist');
 
-    // Set static folder
-    app.use(express.static(frontendPath));
+    console.log(`Checking for frontend build at: ${frontendDistPath}`);
 
-    // Catch-all route to serve index.html for SPA
-    app.get('*', (req, res) => {
-        const indexPath = path.resolve(frontendPath, 'index.html');
+    if (fs.existsSync(frontendDistPath)) {
+        app.use(express.static(frontendDistPath));
 
-        if (fs.existsSync(indexPath)) {
-            res.sendFile(indexPath);
-        } else {
-            console.error(`Frontend build missing at: ${indexPath}`);
-            res.status(500).send('Server Error: Frontend build not found. Please check Render Build Command.');
-        }
-    });
+        // Unknown route? Serve index.html for SPA
+        app.get('*', (req, res) => {
+            const indexPath = path.join(frontendDistPath, 'index.html');
+            if (fs.existsSync(indexPath)) {
+                res.sendFile(indexPath);
+            } else {
+                console.error('Missing index.html!');
+                res.status(500).send('Server Error: index.html not found. Build likely failed.');
+            }
+        });
+    } else {
+        console.error('Frontend dist folder missing!');
+        app.get('*', (req, res) => {
+            res.status(500).send('Server Error: Frontend build missing. Please run "npm run build-client".');
+        });
+    }
 } else {
-    // Development fallback
     app.get('/', (req, res) => {
         res.send('API is running... (Dev Mode)');
     });
 }
 
-// Centralized Error Handling Middleware
+// Global Error Handler
 app.use((err, req, res, next) => {
-    console.error(err.stack);
+    console.error('Server Error:', err.stack);
     const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
-    res.status(statusCode);
-    res.json({
+    res.status(statusCode).json({
         message: err.message,
-        stack: process.env.NODE_ENV === 'production' ? '🥞' : err.stack,
+        stack: process.env.NODE_ENV === 'production' ? null : err.stack,
     });
 });
 
